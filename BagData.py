@@ -4,19 +4,23 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision import transforms
-
+import sys
+OPENCV_PATH = '/home/kosuke/.pyenv/versions/anaconda3-2019.03/lib/python3.7/site-packages'
+sys.path = [OPENCV_PATH] + sys.path
+print(sys.path)
 import cv2
 from onehot import onehot
 
 transform = transforms.Compose([
-    transforms.ToTensor(), 
+    transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+
 
 class BagDataset(Dataset):
 
     def __init__(self, transform=None):
         self.transform = transform
-        
+
     def __len__(self):
         return len(os.listdir('bag_data'))
 
@@ -29,13 +33,14 @@ class BagDataset(Dataset):
         imgB = imgB/255
         imgB = imgB.astype('uint8')
         imgB = onehot(imgB, 2)
-        imgB = imgB.transpose(2,0,1)
+        imgB = imgB.transpose(2, 0, 1)
         imgB = torch.FloatTensor(imgB)
-        #print(imgB.shape)
+        # print(imgB.shape)
         if self.transform:
-            imgA = self.transform(imgA)    
+            imgA = self.transform(imgA)
 
         return imgA, imgB
+
 
 bag = BagDataset(transform)
 
@@ -43,11 +48,13 @@ train_size = int(0.9 * len(bag))
 test_size = len(bag) - train_size
 train_dataset, test_dataset = random_split(bag, [train_size, test_size])
 
-train_dataloader = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=4)
-test_dataloader = DataLoader(test_dataset, batch_size=4, shuffle=True, num_workers=4)
+train_dataloader = DataLoader(
+    train_dataset, batch_size=4, shuffle=True, num_workers=4)
+test_dataloader = DataLoader(
+    test_dataset, batch_size=4, shuffle=True, num_workers=4)
 
 
-if __name__ =='__main__':
+if __name__ == '__main__':
 
     for train_batch in train_dataloader:
         print(train_batch)
