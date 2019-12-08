@@ -21,7 +21,6 @@ def train(epo_num=50, show_vgg_params=False):
     fcn_model = FCNs(pretrained_net=vgg_model, n_class=5)
     fcn_model = fcn_model.to(device)
     # criterion = nn.BCELoss().to(device)
-
     optimizer = optim.SGD(fcn_model.parameters(), lr=1e-2, momentum=0.7)
 
     all_train_iter_loss = []
@@ -43,8 +42,10 @@ def train(epo_num=50, show_vgg_params=False):
             pos_weight[zeroidx] = 100
             pos_weight[nonzeroidx] = 0
             pos_weight = pos_weight[..., 0]
-            pos_weight_ = torch.from_numpy(pos_weight)
-            criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight_).to(device)
+            pos_weight_img = pos_weight[:, :, None]
+            pos_weight_img = pos_weight_img.transpose(2, 0, 1)
+            pos_weight = torch.from_numpy(pos_weight)
+            criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight).to(device)
             bag = bag.to(device)
 
             bag_msk = bag_msk.to(device)
@@ -96,8 +97,7 @@ def train(epo_num=50, show_vgg_params=False):
             label_img[human_idx] = [0, 255, 255]
             label_img = label_img.transpose(2, 0, 1)
 
-            pos_weight_img = pos_weight[:, :, None]
-            pos_weight_img = pos_weight_img.transpose(2, 0, 1)
+
             if np.mod(index, 15) == 0:
                 print('epoch {}, {}/{},train loss is {}'.format(epo,
                                                                 index, len(train_dataloader), iter_loss))

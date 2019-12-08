@@ -46,7 +46,6 @@ class BagDataset(Dataset):
         # in_feature = cv2.resize(in_feature, (160, 160))
         # in_feature = in_feature[..., 1]
 
-        
         # loss_weight = np.load(DATA_PATH + "loss_weight/" + data_name)
         # loss_weight = loss_weight.astype(np.uint8)
         # loss_weight = cv2.resize(loss_weight, (160, 160))
