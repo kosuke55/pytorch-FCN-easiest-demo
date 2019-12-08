@@ -119,4 +119,11 @@ class BCNN(nn.Module):
 
         deconv0 = self.deconv0(deconv1_1)
 
-        return deconv0
+        category = deconv0[:, 0, :, :]
+        instance = deconv0[:, 1:3, :, :]
+        confidence = deconv0[:, 3, :, :]
+        classify = deconv0[:, 4:10, :, :]
+        heading = deconv0[:, 10, :, :]
+        height = deconv0[:, 11, :, :]
+
+        return category, instance, confidence, classify, heading, height
