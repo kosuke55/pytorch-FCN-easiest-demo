@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class BCNN(nn.Module):
-    def __init__(self, in_channels=7, n_class=6):
+    def __init__(self, in_channels=8, n_class=6):
         super().__init__()
         self.n_class = n_class
         self.relu = nn.ReLU(inplace=True)
