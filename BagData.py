@@ -80,8 +80,10 @@ class BagDataset(Dataset):
         # if self.transform:
         #     imgA = self.transform(imgA)
         in_feature = in_feature.astype(np.float32)
+        print(in_feature[in_feature > 0])
         if self.transform:
             in_feature = self.transform(in_feature)
+            print(in_feature[in_feature > 0])
         return in_feature, out_feature
         # return imgA, imgB
 
@@ -101,7 +103,9 @@ test_dataloader = DataLoader(
 if __name__ == '__main__':
 
     for train_batch in train_dataloader:
-        print(train_batch)
+        pass
+        # print(train_batch)
 
     for test_batch in test_dataloader:
-        print(test_batch)
+        pass
+        # print(test_batch)

@@ -7,14 +7,21 @@ from torch.nn import Module
 import warnings
 
 
-# class Weighted_mse(nn.Module):
+class wmse(nn.Module):
 
-#     def __init__(self):
-#         super(Weighted_mse, self).__init__()
+    def __init__(self):
+        super(wmse, self).__init__()
 
-#     def forward(self, output, target, weight):
-#         loss = torch.sum(weight * (output - target) ** 2)
-#         return loss
+    def forward(self, output, target, weight):
+        diff = output - target
+        # diff = output.cpu().detach().numpy().copy()
+        # diff[np.where(diff > 0)] /= 8.
+        # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        # diff = torch.tensor(diff, requires_grad=True)
+        # loss = torch.sum(diff ** 2)
+        loss = torch.sum((weight * diff) ** 2)
+        # return loss.to(device)
+        return loss
 
 
 def wmse_loss(input, target, weight, size_average=None, reduce=None, reduction='mean'):
@@ -28,12 +35,13 @@ def wmse_loss(input, target, weight, size_average=None, reduce=None, reduction='
         reduction = _Reduction.legacy_get_string(size_average, reduce)
     if target.requires_grad:
         diff = input - target
-        diff[np.where(diff > 0)] /= 8.
+        diff[np.where(diff > 0)] /= 4.
         # diff *= weight
         ret = diff ** 2
         if reduction != 'none':
             ret = torch.mean(ret) if reduction == 'mean' else torch.sum(ret)
     else:
+        print("hoge")
         expanded_input, expanded_target = torch.broadcast_tensors(input, target)
         ret = torch._C._nn.mse_loss(expanded_input, expanded_target, _Reduction.get_enum(reduction))
     return ret

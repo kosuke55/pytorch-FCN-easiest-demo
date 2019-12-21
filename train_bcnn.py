@@ -5,23 +5,23 @@ import torch
 import torch.optim as optim
 import visdom
 from NuscData import test_dataloader, train_dataloader
-from weighted_mse import WMSELoss
+from weighted_mse import wmse
 from BCNN import BCNN
 
 
-# def weighted_mse_loss(input, target, weight):
-#     return torch.sum(weight * (input - target) ** 2)
-
-
-def train(epo_num=50):
-
+def train(epo_num, pretrained_model):
+    best_loss = 1e10
     vis = visdom.Visdom()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     bcnn_model = BCNN().to(device)
+    bcnn_model.load_state_dict(torch.load(pretrained_model))
+    # bcnn_model = torch.load(pretrained_model).to(device)
+    bcnn_model.eval()
+
     # criterion = nn.BCELoss().to(device)
-    # optimizer = optim.SGD(bcnn_model.parameters(), lr=1e-2, momentum=0.7)
-    optimizer = optim.SGD(bcnn_model.parameters(), lr=1e-2)
+    # optimizer = optim.SGD(bcnn_model.parameters(), lr=1e-3, momentum=0.7)
+    optimizer = optim.SGD(bcnn_model.parameters(), lr=1e-4)
 
     all_train_iter_loss = []
     all_test_iter_loss = []
@@ -40,10 +40,11 @@ def train(epo_num=50):
             pos_weight[zeroidx] = 0.5
             pos_weight[nonzeroidx] = 1.
             pos_weight = torch.from_numpy(pos_weight)
+            pos_weight = pos_weight.to(device)
             # criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight).to(device)
             # criterion = nn.MSELoss()
-            # criterion = Weighted_mse().to(device)
-            criterion = WMSELoss().to(device)
+            criterion = wmse().to(device)
+            # criterion = WMSELoss().to(device)
             nusc = nusc.to(device)
             nusc_msk = nusc_msk.to(device)
             optimizer.zero_grad()
@@ -62,10 +63,13 @@ def train(epo_num=50):
             output_np = output.cpu().detach().numpy().copy()
             output_np = output_np.transpose(1, 2, 0)
             output_img = np.zeros((640, 640, 1), dtype=np.uint8)
-            conf_idx = np.where(output_np[..., 0] > output_np[..., 0].mean())
+            # conf_idx = np.where(output_np[..., 0] > output_np[..., 0].mean())
+            conf_idx = np.where(output_np[..., 0] > 0.5)
             output_img[conf_idx] = 255
             output_img = output_img.transpose(2, 0, 1)
             nusc_msk_img = nusc_msk.cpu().detach().numpy().copy()
+            # print(nusc.shape)
+            nusc_img = nusc[:, 7, ...].cpu().detach().numpy().copy()
 
             if np.mod(index, 15) == 0:
                 print('epoch {}, {}/{},train loss is {}'.format(epo,
@@ -73,6 +77,9 @@ def train(epo_num=50):
                                                                 len(train_dataloader),
                                                                 iter_loss))
                 # vis.close()
+                vis.images(nusc_img,
+                           win='nusc_img',
+                           opts=dict(title='nusc input'))
                 vis.images(output_img,
                            win='train_pred',
                            opts=dict(title='train prediction'))
@@ -103,14 +110,15 @@ def train(epo_num=50):
                 output_np = output.cpu().detach().numpy().copy()
                 output_np = output_np.transpose(1, 2, 0)
                 output_img = np.zeros((640, 640, 1), dtype=np.uint8)
-                conf_idx = np.where(output_np[..., 0] > output_np[..., 0].mean())
+                # conf_idx = np.where(output_np[..., 0] > output_np[..., 0].mean())
+                conf_idx = np.where(output_np[..., 0] > 0.5)
                 output_img[conf_idx] = 255
                 output_img = output_img.transpose(2, 0, 1)
 
                 nusc_msk_img = nusc_msk.cpu().detach().numpy().copy()
 
                 if np.mod(index, 15) == 0:
-                    print(r'Testing... Open http://localhost:8097/ to see test result.')
+                    # print(r'Testing... Open http://localhost:8097/ to see test result.')
                     # vis.close()
                     vis.images(output_img, win='test_pred', opts=dict(
                         title='test prediction'))
@@ -126,13 +134,20 @@ def train(epo_num=50):
         time_str = "Time %02d:%02d:%02d" % (h, m, s)
         prev_time = cur_time
 
-        print('epoch train loss = %f, epoch test loss = %f, %s'
-              % (train_loss/len(train_dataloader), test_loss/len(test_dataloader), time_str))
-
-        if np.mod(epo, 5) == 0:
-            torch.save(bcnn_model, 'checkpoints/bcnn_model_{}.pt'.format(epo))
-            print('saveing checkpoints/bcnn_model_{}.pt'.format(epo))
+        print('epoch train loss = %f, epoch test loss = %f, best_loss = %f, %s'
+              % (train_loss/len(train_dataloader),
+                 test_loss/len(test_dataloader),
+                 best_loss,
+                 time_str))
+        if(best_loss > test_loss/len(test_dataloader)):
+            print('update best model {} -> {}'.format(
+                best_loss, test_loss/len(test_dataloader)))
+            best_loss = test_loss/len(test_dataloader)
+            torch.save(bcnn_model.state_dict(), 'checkpoints/bcnn_bestmodel.pt')
 
 
 if __name__ == "__main__":
-    train(epo_num=100000)
+    # pretrained_model = "/home/kosuke/develop/pytorch-FCN-easiest-demo/checkpoints/bcnn_bestmodel_mini_844.pt"
+    pretrained_model = "/home/kosuke/develop/pytorch-FCN-easiest-demo/checkpoints/bcnn_bestmodel.pt"
+    train(epo_num=100000, pretrained_model=pretrained_model)
+

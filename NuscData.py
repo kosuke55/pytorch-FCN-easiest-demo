@@ -15,7 +15,7 @@ transform = transforms.Compose([
 
 
 DATA_PATH \
-    = "/media/kosuke/f798886c-8a70-48a4-9b66-8c9102072e3e/baidu_train_data/"
+    = "/media/kosuke/f798886c-8a70-48a4-9b66-8c9102072e3e/baidu_train_data/all/"
 
 
 class NuscDataset(Dataset):
@@ -30,19 +30,27 @@ class NuscDataset(Dataset):
         data_name = os.listdir(DATA_PATH + 'in_feature')[idx]
 
         in_feature = np.load(DATA_PATH + "in_feature/" + data_name)
+        # print(in_feature[..., c][in_feature[..., c] > 0])
+        in_feature = in_feature.astype(np.float32)
 
         out_feature = np.load(DATA_PATH + "out_feature/" + data_name)
         # print(out_feature.shape)
         out_feature = out_feature[..., 0]   # use only confidence
         # out_feature = out_feature.transpose(2, 0, 1)
         out_feature = torch.FloatTensor(out_feature)
+        # print(out_feature[out_feature>0])
         # print(out_feature.shape)
         # import pdb
         # pdb.set_trace()
 
-        in_feature = in_feature.astype(np.float32)
+        # c = 1
+        # print(in_feature[..., c][in_feature[..., c] > 0])
+        # print(in_feature.shape)
         if self.transform:
             in_feature = self.transform(in_feature)
+            # print(in_feature.shape)
+            # print(in_feature[c][in_feature[c] > 0])
+
         return in_feature, out_feature
 
 
@@ -61,7 +69,9 @@ test_dataloader = DataLoader(
 if __name__ == '__main__':
 
     for train_batch in train_dataloader:
-        print(train_batch)
+        pass
+        # print(train_batch)
 
     for test_batch in test_dataloader:
-        print(test_batch)
+        pass
+        # print(test_batch)
